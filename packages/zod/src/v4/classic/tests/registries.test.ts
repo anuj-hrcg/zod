@@ -241,3 +241,19 @@ test("toJSONSchema allows same schema with same id", () => {
   const result = z.toJSONSchema(wrapper, { metadata: reg });
   expect(result.$defs?.["shared-id"]).toBeDefined();
 });
+
+test("removing a previous id owner preserves the current owner", () => {
+  const reg = z.registry<z.core.GlobalMeta>();
+  const previous = z.string().register(reg, { id: "shared-id" });
+  const current = z.number().register(reg, { id: "shared-id" });
+  expect(reg.remove(previous)).toBe(reg);
+  expect(reg.has(previous)).toBe(false);
+  expect(reg.has(current)).toBe(true);
+  expect(reg._idmap.get("shared-id")).toBe(current);
+  expect(z.toJSONSchema(reg).schemas["shared-id"]).toMatchObject({ type: "number" });
+  reg.remove(previous);
+  expect(reg._idmap.get("shared-id")).toBe(current);
+  reg.remove(current);
+  expect(reg._idmap.has("shared-id")).toBe(false);
+  expect(z.toJSONSchema(reg).schemas).toEqual({});
+});
