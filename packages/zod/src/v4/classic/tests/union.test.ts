@@ -308,3 +308,26 @@ test("z.discriminatedUnion with empty options constructs and rejects", () => {
     expect((obj.error.issues[0] as any).options).toEqual([]);
   }
 });
+
+test.each([false, true])("unions preserve incoming pipe issues (async %s)", async (async) => {
+  const field = z.literal("x").refine(() => (async ? Promise.resolve(true) : true));
+  const schema = z.strictObject({ a: z.string() }).pipe(z.union([z.object({ a: field }), z.object({ a: z.string() })]));
+  const parse = (input: { a: string; extra?: number }) =>
+    async ? schema.safeParseAsync(input) : schema.safeParse(input);
+  expect(await parse({ a: "x" })).toEqual({ success: true, data: { a: "x" } });
+  expect(await parse({ a: "x", extra: 1 })).toMatchObject({
+    success: false,
+    error: { issues: [{ code: "unrecognized_keys", keys: ["extra"], path: [] }] },
+  });
+});
+
+test.each([false, true])("unions retain incoming and branch errors (async %s)", async (async) => {
+  const field = z.string().refine(() => (async ? Promise.resolve(false) : false));
+  const schema = z
+    .strictObject({ a: z.string() })
+    .pipe(z.union([z.object({ a: field }), z.object({ a: z.string().refine(() => false, { abort: true }) })]));
+  const input = { a: "x", extra: 1 };
+  const result = async ? await schema.safeParseAsync(input) : schema.safeParse(input);
+  expect(result.success).toBe(false);
+  expect(result.error?.issues.map((issue) => issue.code)).toEqual(["unrecognized_keys", "custom"]);
+});
