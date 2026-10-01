@@ -399,6 +399,16 @@ test("jwt token", () => {
   expect(() => jwt.parse(d5)).toThrow();
 });
 
+test.each([">?", "a>?"])("jwt token with base64url header %s", (kid) => {
+  const token = makeJwt({ alg: "RS256", kid }, {});
+  expect(token.split(".")[0]).toMatch(/[-_]/);
+  expect(z.jwt().safeParse(token).success).toBe(true);
+  expect(z.string().jwt({ alg: "RS256" }).safeParse(token).success).toBe(true);
+  expect(z.jwt({ alg: "HS256" }).safeParse(token).success).toBe(false);
+  expect(z.jwt().safeParse(makeJwt({ alg: "RS256", typ: "invalid", kid }, {})).success).toBe(false);
+  expect(z.jwt().safeParse(makeJwt({ kid }, {})).success).toBe(false);
+});
+
 test("url validations", () => {
   const url = z.string().url();
   url.parse("http://google.com");
