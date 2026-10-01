@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import resolve from "@rollup/plugin-node-resolve";
 import { type Plugin, rollup } from "rollup";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, test } from "vitest";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -77,5 +77,24 @@ describe("locale tree-shaking", () => {
       expect(code).toContain(GERMAN);
       expect(code).not.toContain(JAPANESE);
     });
+  }
+});
+
+test("prose comments do not produce Rollup annotation warnings", async () => {
+  if (!existsSync(BUILT_ENTRY)) throw new Error("run nub run build before testing Rollup annotations");
+  const warnings: string[] = [];
+  const build = await rollup({
+    input: "ignored",
+    plugins: [entry('import { z } from "zod"; export const schema = z.string();'), resolve()],
+    treeshake: { preset: "smallest", annotations: true },
+    onwarn: (warning) => {
+      if (warning.code === "INVALID_ANNOTATION") warnings.push(warning.message);
+    },
+  });
+  try {
+    await build.generate({ format: "esm" });
+    expect(warnings).toEqual([]);
+  } finally {
+    await build.close();
   }
 });
