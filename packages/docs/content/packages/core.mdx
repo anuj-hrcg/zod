@@ -74,10 +74,12 @@ export type $ZodTypes =
   | $ZodSet
   | $ZodLiteral
   | $ZodEnum
+  | $ZodFunction
   | $ZodPromise
   | $ZodLazy
   | $ZodOptional
   | $ZodDefault
+  | $ZodPrefault
   | $ZodTemplateLiteral
   | $ZodCustom
   | $ZodTransform
@@ -144,6 +146,7 @@ export type $ZodTypes =
       - $ZodSet
       - $ZodEnum
       - $ZodLiteral
+      - $ZodFunction
       - $ZodFile
       - $ZodTransform
       - $ZodOptional
