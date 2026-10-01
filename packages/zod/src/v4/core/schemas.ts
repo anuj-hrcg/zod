@@ -2830,7 +2830,7 @@ export function mergeValues(
   // const aType = parse.t(a);
   // const bType = parse.t(b);
 
-  if (a === b) {
+  if (a === b || (Number.isNaN(a) && Number.isNaN(b))) {
     return { valid: true, data: a };
   }
   if (a instanceof Date && b instanceof Date && +a === +b) {

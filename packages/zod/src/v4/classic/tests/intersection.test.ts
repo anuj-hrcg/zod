@@ -332,3 +332,28 @@ test("a strict object composes with a refined object", () => {
   expect(A.and(B).parse({ key1: true, key2: true })).toEqual({ key1: true, key2: true });
   expect(A.and(B).safeParse({ key1: true, key2: false }).success).toBe(false);
 });
+
+test("intersections merge identical NaN outputs", async () => {
+  const nan = z.nan().and(z.nan());
+  expect(nan.safeParse(Number.NaN)).toEqual({ success: true, data: Number.NaN });
+  expect(await nan.safeParseAsync(Number.NaN)).toEqual({ success: true, data: Number.NaN });
+  expect(nan.safeParse(0).success).toBe(false);
+  expect(z.unknown().and(z.unknown()).parse(Number.NaN)).toBeNaN();
+  const object = z.looseObject({ a: z.string() }).and(z.looseObject({ b: z.string() }));
+  expect(object.parse({ a: "a", b: "b", c: Number.NaN })).toEqual({ a: "a", b: "b", c: Number.NaN });
+  expect(z.array(z.nan()).and(z.array(z.nan())).parse([Number.NaN])).toEqual([Number.NaN]);
+  expect(() =>
+    z
+      .number()
+      .transform(() => Number.NaN)
+      .and(z.number())
+      .parse(0)
+  ).toThrow("Unmergable intersection");
+  expect(
+    z
+      .number()
+      .transform(() => 0)
+      .and(z.number().transform(() => -0))
+      .parse(1)
+  ).toBe(0);
+});
